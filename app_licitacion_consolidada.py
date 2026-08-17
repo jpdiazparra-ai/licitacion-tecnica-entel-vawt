@@ -1350,6 +1350,8 @@ def comment_paragraph(text: str) -> str:
 
 # Recursos compartidos (imágenes hero, etc.)
 _HERO_CANDIDATES = [
+    (Path(__file__).parent / "pages" / "assets" / "hero_vawt.jpg").resolve(),
+    (Path(__file__).parent / "pages" / "hero_vawt.jpg").resolve(),
     (Path(__file__).parent / "assets" / "hero_vawt.jpg").resolve(),
     (Path(__file__).parent / "hero_vawt.jpg").resolve(),
 ]
