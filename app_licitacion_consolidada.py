@@ -4049,13 +4049,8 @@ with st.sidebar:
     # --- Tren de potencia / Generador ---
     with st.expander("Tren de potencia / Generador", expanded=False):
 
-        # 0) Selección de modelo de generador
-        gen_key = st.selectbox(
-            "Modelo generador axial-flux",
-            options=list(GENERATORS.keys()),
-            format_func=lambda k: GENERATORS[k]["label"],
-            index=0,
-        )
+        # Modelo fijo para licitación Entel: turbina VAWT 10 kW.
+        gen_key = "GDG_10k"
         GEN = GENERATORS[gen_key]
 
         # --- Alias globales para compatibilidad con el resto del código ---
@@ -4132,8 +4127,8 @@ with st.sidebar:
         Ke_vsr_default = st.number_input("Ke [V·s/rad]", min_value=1.0, value=float(GEN["Ke_default"]), step=0.1)
         Kt_nm_per_A    = st.number_input("Kt [N·m/A]", min_value=1.0, value=float(GEN["Kt_default"]), step=0.1)
 
-        st.caption("Puedes subir una curva alternativa del generador (cols: rpm, P_kW, V_LL).")
-        gen_csv = st.file_uploader("CSV rendimiento generador", type=["csv"])
+        gen_csv = None
+        st.caption("Curva de generador fija para la oferta de 10 kW; no se solicita carga manual de CSV.")
 
         eta_elec = st.number_input("η electrónica (rect+inv)", min_value=0.90, value=0.975, step=0.005)
 
@@ -4273,16 +4268,12 @@ with st.sidebar:
 
     # Datos piloto (SCADA) para calibración
     with st.expander("Datos piloto (SCADA)", expanded=False):
-        file_scada = st.file_uploader(
-            "CSV SCADA (viento, potencia, rpm, corriente)",
-            type=["csv"],
-            help="Sube un CSV con columnas de viento, potencia y opcionalmente rpm/corriente.",
-        )
-
-        if file_scada is not None:
-            df_scada = read_uploaded_csv(file_scada.getvalue())
+        default_scada_path = Path(__file__).resolve().parent / "assets" / "MG888.csv"
+        if default_scada_path.exists():
+            df_scada = read_uploaded_csv(default_scada_path.read_bytes())
             st.session_state["df_scada_raw"] = df_scada
-            st.session_state["df_scada_filename"] = getattr(file_scada, "name", "archivo_cargado.csv")
+            st.session_state["df_scada_filename"] = default_scada_path.name
+            st.caption(f"Archivo SCADA cargado por defecto: {default_scada_path.name}")
 
             st.caption(f"Columnas detectadas: {', '.join(df_scada.columns.astype(str))}")
 
@@ -4398,6 +4389,8 @@ with st.sidebar:
                 }
 
                 st.caption("La calibración se mostrará en el cuerpo principal cuando se complete la simulación.")
+        else:
+            st.error("No se encontró el archivo SCADA por defecto: assets/MG888.csv")
 
         
 
@@ -4691,63 +4684,6 @@ download_context_df = pd.DataFrame([
     {"Grupo": "Cargas", "Campo": "F centrípeta/pala nominal [kN]", "Valor": F_centripetal_per_blade / 1000.0},
     {"Grupo": "Cargas", "Campo": "M_base nominal [kN·m]", "Valor": M_root_rated / 1000.0},
 ])
-
-st.markdown("""
-<div class="comment-box" style="border-left: 6px solid #3d5a80;">
-  <div class="comment-title">📦 Descarga integral del dashboard</div>
-  <p>
-    Exporta en un solo archivo el panel principal, todas las pestañas, sub-bloques del mapa técnico,
-    tablas de cálculo y gráficos principales del modelo.
-  </p>
-</div>
-""", unsafe_allow_html=True)
-
-global_export_sheets = build_global_export_sheets()
-global_index_rows = global_export_index_rows()
-col_export_xlsx, col_export_pdf, col_export_html = st.columns(3)
-with col_export_xlsx:
-    st.download_button(
-        "📥 Descargar TODO Excel",
-        data=build_section_workbook(
-            "Reporte completo dashboard",
-            section_rows=global_index_rows,
-            extra_sheets=global_export_sheets,
-        ),
-        file_name="reporte_completo_vawt.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        key="download_global_excel_dashboard",
-        use_container_width=True,
-    )
-with col_export_pdf:
-    if st.button(
-        "📄 Generar TODO PDF",
-        key="make_global_pdf_dashboard",
-        use_container_width=True,
-        help="Genera PDF integral con panel principal, tablas y gráficos técnicos. Para fidelidad interactiva de gráficos usa el HTML.",
-    ):
-        global_pdf_bytes = build_section_pdf(
-            "Reporte completo dashboard VAWT",
-            section_rows=global_index_rows,
-            extra_sheets=global_export_sheets,
-        )
-        st.download_button(
-            "📥 Descargar TODO PDF",
-            data=global_pdf_bytes,
-            file_name="reporte_completo_vawt.pdf",
-            mime="application/pdf",
-            key="download_global_pdf_dashboard",
-            use_container_width=True,
-        )
-with col_export_html:
-    st.download_button(
-        "🌐 Descargar HTML web",
-        data=build_global_html_report(),
-        file_name="reporte_completo_vawt_web.html",
-        mime="text/html",
-        key="download_global_html_dashboard",
-        use_container_width=True,
-        help="Conserva los gráficos Plotly interactivos con diseño web de forma más fiel que PDF.",
-    )
 
 with st.expander("📡 Entel - entregables RFP", expanded=True):
     entel_delivery_rows = [
