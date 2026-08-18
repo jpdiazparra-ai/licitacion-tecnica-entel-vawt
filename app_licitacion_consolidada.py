@@ -1868,8 +1868,10 @@ def load_entel_proposal_7810_from_url(url: str = ENTEL_PROPOSAL_7810_URL) -> dic
             if not any(values):
                 continue
             first_clean = re.sub(r"\s+", " ", first)
-            if current_point == "6" and first_clean.lower() in {"eje de experiencia", "n°", "nº", "n"}:
-                if fifth:
+            if current_point == "6" and first_clean.lower() == "eje de experiencia":
+                continue
+            if current_point == "6" and first_clean.lower() in {"n°", "nº", "n"}:
+                if fifth and fifth.lower() != "etapa ejecutada":
                     records.append({
                         "Punto RFP": current_point,
                         "Subcapítulo": "6.2 Etapas de desarrollo tecnológico ejecutadas",
@@ -1932,22 +1934,32 @@ def load_entel_proposal_7810_from_url(url: str = ENTEL_PROPOSAL_7810_URL) -> dic
             if current_point not in {"5", "6", "7", "8", "9", "10", "11", "12"}:
                 continue
             if current_point == "6":
-                if second:
-                    records.append({
-                        "Punto RFP": current_point,
-                        "Subcapítulo": "6.1 Síntesis de experiencia declarada",
-                        "Concepto": first_clean or "Eje de experiencia",
-                        "Solicitud / recomendación RFP": "",
-                        "Respuesta incluida en oferta": second,
-                    })
-                if fifth:
+                is_numbered_stage = bool(re.match(r"^\d+$", first_clean))
+                if is_numbered_stage:
                     records.append({
                         "Punto RFP": current_point,
                         "Subcapítulo": "6.2 Etapas de desarrollo tecnológico ejecutadas",
-                        "Concepto": first_clean if re.match(r"^\d+$", first_clean) else "",
-                        "Solicitud / recomendación RFP": second if re.match(r"^\d+$", first_clean) else first_clean,
+                        "Concepto": first_clean,
+                        "Solicitud / recomendación RFP": second,
                         "Respuesta incluida en oferta": fifth,
                     })
+                else:
+                    if second:
+                        records.append({
+                            "Punto RFP": current_point,
+                            "Subcapítulo": "6.1 Síntesis de experiencia declarada",
+                            "Concepto": first_clean or "Eje de experiencia",
+                            "Solicitud / recomendación RFP": "",
+                            "Respuesta incluida en oferta": second,
+                        })
+                    if fifth:
+                        records.append({
+                            "Punto RFP": current_point,
+                            "Subcapítulo": "6.2 Etapas de desarrollo tecnológico ejecutadas",
+                            "Concepto": "",
+                            "Solicitud / recomendación RFP": "",
+                            "Respuesta incluida en oferta": fifth,
+                        })
                 if first_clean:
                     last_concept = first_clean
                 continue
