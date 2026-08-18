@@ -1592,6 +1592,11 @@ ENTEL_PROPOSAL_7810_URL = (
     "2PACX-1vTMbuG9VMHtxEYLcLIHmw4s5Y6MHF1HwsMOD_sfyt8ZliE2c2_JRZaO7fRi-uacYQ/"
     "pub?output=csv&gid=2125370755"
 )
+ENTEL_INTRODUCTION_URL = (
+    "https://docs.google.com/spreadsheets/d/e/"
+    "2PACX-1vTMbuG9VMHtxEYLcLIHmw4s5Y6MHF1HwsMOD_sfyt8ZliE2c2_JRZaO7fRi-uacYQ/"
+    "pub?output=csv&gid=1506621143"
+)
 ENTEL_REQ_EXC_URL = (
     "https://docs.google.com/spreadsheets/d/e/"
     "2PACX-1vTMbuG9VMHtxEYLcLIHmw4s5Y6MHF1HwsMOD_sfyt8ZliE2c2_JRZaO7fRi-uacYQ/"
@@ -1622,6 +1627,39 @@ def _read_remote_csv_with_timeout(url: str, timeout: float = 5.0, **kwargs) -> p
     with urllib.request.urlopen(url, timeout=timeout) as response:
         payload = response.read()
     return pd.read_csv(io.BytesIO(payload), **kwargs)
+
+
+@st.cache_data(show_spinner=False, ttl=900)
+def load_entel_introduction_from_url(url: str = ENTEL_INTRODUCTION_URL) -> dict:
+    fallback_text = (
+        "Introducción de la Propuesta Técnica\n"
+        "Fluxial Wind SpA presenta su propuesta técnica para el suministro de una solución "
+        "de generación eólica distribuida de 10 kW, orientada a infraestructura de "
+        "telecomunicaciones y condiciones de viento variable."
+    )
+    try:
+        raw = _read_remote_csv_with_timeout(url, timeout=5.0, header=None, dtype=str).fillna("")
+        flat_values = [
+            str(value).replace("\xa0", " ").strip()
+            for value in raw.to_numpy().ravel().tolist()
+            if str(value).replace("\xa0", " ").strip()
+        ]
+        source = "URL Google Sheets - Introducción"
+    except Exception:
+        flat_values = [fallback_text]
+        source = "Fallback local"
+
+    text = "\n".join(flat_values).strip()
+    lines = [re.sub(r"\s+", " ", line).strip() for line in re.split(r"[\r\n]+", text) if line.strip()]
+    title = lines[0] if lines else "Introducción de la Propuesta Técnica"
+    paragraphs = lines[1:] if len(lines) > 1 else []
+    return {
+        "title": title,
+        "paragraphs": paragraphs,
+        "source": source,
+        "url": url,
+        "df": pd.DataFrame({"Sección": [title] * max(len(paragraphs), 1), "Texto": paragraphs or [text]}),
+    }
 
 
 @st.cache_data(show_spinner=False, ttl=900)
@@ -5211,6 +5249,11 @@ entel_monitoring_analysis_df = pd.DataFrame([
 entel_req_exc_payload = load_entel_req_exc_from_url()
 entel_req_exc_df = entel_req_exc_payload["df"].copy()
 entel_req_exc_source = entel_req_exc_payload.get("source", "URL Google Sheets - Req.exc")
+entel_introduction_payload = load_entel_introduction_from_url()
+entel_introduction_title = entel_introduction_payload.get("title", "Introducción de la Propuesta Técnica")
+entel_introduction_paragraphs = entel_introduction_payload.get("paragraphs", [])
+entel_introduction_df = entel_introduction_payload.get("df", pd.DataFrame())
+entel_introduction_source = entel_introduction_payload.get("source", "URL Google Sheets - Introducción")
 
 entel_proposal_7810_payload = load_entel_proposal_7810_from_url()
 entel_proposal_7810_df = entel_proposal_7810_payload["df"].copy()
@@ -6204,6 +6247,31 @@ st.markdown(
         font-weight: 850;
         line-height: 1.22;
     }
+    .entel-intro-panel {
+        border: 1px solid rgba(79,90,105,0.16);
+        border-left: 6px solid var(--accent);
+        border-radius: 8px;
+        background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+        padding: 1.05rem 1.18rem;
+        margin: 0.15rem 0 1.12rem 0;
+        box-shadow: 0 10px 24px rgba(31,41,51,0.07);
+    }
+    .entel-intro-panel__title {
+        color: #173b57;
+        font-size: 1.0rem;
+        font-weight: 900;
+        margin-bottom: 0.62rem;
+    }
+    .entel-intro-panel__body p {
+        color: #2f3b4a;
+        font-size: 0.88rem;
+        line-height: 1.58;
+        margin: 0 0 0.72rem 0;
+        text-align: justify;
+    }
+    .entel-intro-panel__body p:last-child {
+        margin-bottom: 0;
+    }
     .entel-eng-kpi-grid {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -6455,6 +6523,20 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+intro_body_html = "".join(
+    f"<p>{escape(paragraph)}</p>"
+    for paragraph in entel_introduction_paragraphs
+)
+st.markdown(
+    f"""
+    <div class="entel-intro-panel" style="--accent:#2f5f73;">
+      <div class="entel-intro-panel__title">{escape(entel_introduction_title)}</div>
+      <div class="entel-intro-panel__body">{intro_body_html}</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+st.caption(f"Fuente trazable: {entel_introduction_source}. Hoja publicada: Introducción.")
 
 st.markdown('<div class="entel-eng-section" style="--accent:#2f5f73;">3. Requerimientos Técnicos Mínimos</div>', unsafe_allow_html=True)
 st.markdown('<div class="entel-eng-section" style="--accent:#5f7f75;">3.1 Características Generales</div>', unsafe_allow_html=True)
@@ -6807,6 +6889,7 @@ section_title="Entel - entregables RFP",
 section_rows=entel_summary_df,
 key_suffix="entel_entregables_rfp",
 extra_sheets={
+    "Introducción": entel_introduction_df,
     "Matriz cumplimiento": entel_delivery_df,
     "Resumen técnico": entel_summary_df,
     "EYA 3.2 sitio": entel_yield_site_df,
