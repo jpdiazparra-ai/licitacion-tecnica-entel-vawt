@@ -6545,84 +6545,146 @@ st.markdown(
     @media print {
         @page {
             size: Letter portrait;
-            margin: 11mm 9mm 12mm 9mm;
+            margin: 10mm 8mm 11mm 8mm;
         }
         html,
         body {
+            width: 216mm !important;
+            min-height: 279mm !important;
+            margin: 0 !important;
+            background: #ffffff !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+        }
+        .stApp,
+        [data-testid="stAppViewContainer"],
+        section.main,
+        .main {
+            width: 100% !important;
+            max-width: 100% !important;
+            background: #ffffff !important;
+            overflow: visible !important;
         }
         [data-testid="stHeader"],
         [data-testid="stToolbar"],
         [data-testid="stDecoration"],
         [data-testid="stSidebar"],
+        [data-testid="collapsedControl"],
         .stDeployButton,
         button[kind="header"],
+        .stButton,
         iframe[title="streamlit_floating_button"] {
             display: none !important;
         }
         .main .block-container {
-            max-width: 100% !important;
-            width: 100% !important;
+            max-width: 200mm !important;
+            width: 200mm !important;
             padding: 0 !important;
+            margin: 0 auto !important;
+            overflow: visible !important;
+        }
+        .main .block-container > div,
+        .main .block-container > div > div,
+        div[data-testid="stVerticalBlock"],
+        div[data-testid="stVerticalBlock"] > div,
+        div[data-testid="stElementContainer"],
+        div[data-testid="element-container"] {
+            gap: 0 !important;
+            row-gap: 0 !important;
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+            overflow: visible !important;
         }
         .entel-eng-panel,
+        .entel-intro-panel,
         .comment-box,
         .entel-eng-kpi-grid,
-        .entel-fixed-table-wrap,
-        .js-plotly-plot {
+        .entel-eng-kpi,
+        .js-plotly-plot,
+        div[data-testid="stPlotlyChart"] {
             break-inside: avoid !important;
             page-break-inside: avoid !important;
         }
         .entel-eng-section {
             break-after: avoid !important;
             page-break-after: avoid !important;
-            margin-top: 0.42rem !important;
-            margin-bottom: 0.28rem !important;
-            font-size: 0.86rem !important;
-        }
-        .entel-eng-section::before {
-            height: 18px !important;
-            width: 6px !important;
-        }
-        .entel-eng-panel {
-            padding: 0.48rem 0.62rem !important;
-            margin: 0 0 0.42rem 0 !important;
-            box-shadow: none !important;
-        }
-        .entel-eng-panel__eyebrow {
-            font-size: 0.54rem !important;
-        }
-        .entel-eng-panel__title {
-            font-size: 0.78rem !important;
-            line-height: 1.16 !important;
-        }
-        .comment-box {
-            padding: 0.46rem 0.58rem !important;
-            margin: 0.24rem 0 0.5rem 0 !important;
-            box-shadow: none !important;
-        }
-        .comment-box p {
-            font-size: 0.68rem !important;
-            line-height: 1.22 !important;
-            margin: 0.2rem 0 !important;
-        }
-        .entel-fixed-table-wrap {
-            margin: 0.15rem 0 0.55rem 0 !important;
-            border-radius: 4px !important;
-            box-shadow: none !important;
-        }
-        .entel-fixed-table {
-            font-size: 0.56rem !important;
-            table-layout: fixed !important;
-            width: 100% !important;
-        }
-        .entel-fixed-table th {
-            padding: 0.28rem 0.34rem !important;
+            margin-top: 3.2mm !important;
+            margin-bottom: 1.8mm !important;
+            font-size: 9.6pt !important;
             line-height: 1.12 !important;
         }
+        .entel-eng-section::before {
+            height: 6.5mm !important;
+            width: 2.2mm !important;
+            min-width: 2.2mm !important;
+        }
+        .entel-eng-panel {
+            padding: 3.0mm 3.4mm !important;
+            margin: 0 0 3.2mm 0 !important;
+            box-shadow: none !important;
+            background-size: 10mm 10mm, 10mm 10mm, auto !important;
+        }
+        .entel-eng-panel__eyebrow {
+            font-size: 6.2pt !important;
+            margin-bottom: 1mm !important;
+        }
+        .entel-eng-panel__title {
+            font-size: 8.8pt !important;
+            line-height: 1.18 !important;
+        }
+        .entel-intro-panel {
+            padding: 3.2mm 3.6mm !important;
+            margin: 0 0 3.6mm 0 !important;
+            box-shadow: none !important;
+        }
+        .entel-intro-panel__title {
+            font-size: 9.2pt !important;
+            margin-bottom: 2mm !important;
+        }
+        .entel-intro-panel__body p {
+            font-size: 7.4pt !important;
+            line-height: 1.25 !important;
+            margin: 0 0 2mm 0 !important;
+        }
+        .comment-box {
+            padding: 2.6mm 3.2mm !important;
+            margin: 1.6mm 0 3.2mm 0 !important;
+            box-shadow: none !important;
+        }
+        .comment-box h4,
+        .comment-box strong {
+            font-size: 8.2pt !important;
+            line-height: 1.18 !important;
+        }
+        .comment-box p {
+            font-size: 7.2pt !important;
+            line-height: 1.2 !important;
+            margin: 1.2mm 0 !important;
+        }
+        .entel-fixed-table-wrap {
+            margin: 1.2mm 0 3.6mm 0 !important;
+            border-radius: 4px !important;
+            box-shadow: none !important;
+            overflow: visible !important;
+        }
+        .entel-fixed-table {
+            font-size: 6.25pt !important;
+            table-layout: fixed !important;
+            width: 100% !important;
+            border-collapse: collapse !important;
+        }
+        .entel-fixed-table thead {
+            display: table-header-group !important;
+        }
+        .entel-fixed-table tbody {
+            display: table-row-group !important;
+        }
+        .entel-fixed-table th {
+            padding: 1.8mm 2mm !important;
+            line-height: 1.14 !important;
+        }
         .entel-fixed-table td {
-            padding: 0.26rem 0.34rem !important;
+            padding: 1.55mm 2mm !important;
             line-height: 1.16 !important;
             overflow-wrap: break-word !important;
             word-break: normal !important;
@@ -6632,27 +6694,59 @@ st.markdown(
             page-break-inside: avoid !important;
         }
         .entel-eng-kpi-grid {
-            gap: 0.34rem !important;
-            margin: 0.22rem 0 0.5rem 0 !important;
+            grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            gap: 2.4mm !important;
+            margin: 1.8mm 0 3.6mm 0 !important;
         }
         .entel-eng-kpi {
             min-height: auto !important;
-            padding: 0.44rem 0.52rem !important;
+            padding: 2.4mm 2.8mm !important;
             box-shadow: none !important;
+            border-radius: 4px !important;
         }
         .entel-eng-kpi__label {
-            font-size: 0.5rem !important;
+            font-size: 5.8pt !important;
+            margin-bottom: 1mm !important;
         }
         .entel-eng-kpi__value {
-            font-size: 0.88rem !important;
+            font-size: 11pt !important;
         }
         .entel-eng-kpi__sub {
-            font-size: 0.56rem !important;
+            font-size: 6.2pt !important;
             line-height: 1.12 !important;
+            margin-top: 1.2mm !important;
+        }
+        div[data-testid="stPlotlyChart"],
+        .js-plotly-plot {
+            width: 100% !important;
+            max-width: 100% !important;
+            min-height: 0 !important;
+            margin: 0 0 4mm 0 !important;
+        }
+        .js-plotly-plot .svg-container,
+        .js-plotly-plot .main-svg {
+            max-width: 100% !important;
+        }
+        .js-plotly-plot .svg-container {
+            height: 126mm !important;
+        }
+        .js-plotly-plot .main-svg {
+            height: 126mm !important;
+        }
+        .element-container:has(.js-plotly-plot) {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
         }
         .entel-print-page-break {
             break-before: page !important;
             page-break-before: always !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        .entel-print-page-break + div,
+        .entel-print-page-break + div .entel-eng-section {
+            margin-top: 0 !important;
         }
     }
     </style>
