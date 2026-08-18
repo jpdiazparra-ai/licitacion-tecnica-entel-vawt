@@ -1,5 +1,6 @@
 import streamlit as st
 import streamlit.components.v1 as components
+import copy
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -6339,6 +6340,30 @@ def render_entel_fixed_table(df_table: pd.DataFrame, widths: list[int] | None = 
         unsafe_allow_html=True,
     )
 
+
+def render_entel_print_safe_chart(fig, key: str, width: int = 920, height: int | None = None) -> None:
+    fig_print = copy.deepcopy(fig)
+    base_height = height or int(fig_print.layout.height or 470)
+    margin = fig_print.layout.margin
+    fig_print.update_layout(
+        autosize=False,
+        width=width,
+        height=min(max(base_height, 390), 540),
+        margin=dict(
+            l=max(int(margin.l or 60), 58),
+            r=min(max(int(margin.r or 34), 28), 44),
+            t=min(max(int(margin.t or 78), 64), 102),
+            b=min(max(int(margin.b or 82), 74), 132),
+        ),
+    )
+    st.plotly_chart(
+        fig_print,
+        use_container_width=False,
+        config={"displayModeBar": False, "responsive": False},
+        key=key,
+    )
+
+
 entel_wind_distribution_fig = style_entel_electrical_fig(entel_wind_distribution_fig, height=640, add_wind_refs=False)
 entel_wind_distribution_fig.update_layout(margin=dict(l=64, r=38, t=112, b=138))
 entel_wind_distribution_fig.update_yaxes(rangemode="tozero", automargin=True)
@@ -6871,13 +6896,13 @@ st.markdown('<div class="entel-eng-section" style="--accent:#5f7f75;">Metodolog�
 render_entel_fixed_table(entel_yield_methodology_df, widths=[22, 52, 26])
 st.markdown('<div class="entel-eng-section" style="--accent:#5f7f75;">Resultados Energy Yield Assessment</div>', unsafe_allow_html=True)
 render_entel_fixed_table(format_entel_display_table(entel_yield_assessment_df, formats={"Valor": "{:,.3f}"}), widths=[28, 16, 14, 42])
-st.plotly_chart(entel_wind_distribution_fig, use_container_width=True, key="consolidated_wind_distribution")
+render_entel_print_safe_chart(entel_wind_distribution_fig, key="consolidated_wind_distribution")
 st.markdown('<div class="entel-eng-section" style="--accent:#5f7f75;">P50 técnico y sensibilidades</div>', unsafe_allow_html=True)
 render_entel_fixed_table(
     format_entel_display_table(entel_yield_sensitivity_df, formats={"AEP [kWh/año]": "{:,.1f}", "Factor planta [%]": "{:.2f}"}),
     widths=[11, 16, 15, 13, 11, 34],
 )
-st.plotly_chart(entel_yield_sensitivity_fig, use_container_width=True, key="consolidated_yield_sensitivity")
+render_entel_print_safe_chart(entel_yield_sensitivity_fig, key="consolidated_yield_sensitivity")
 st.markdown('<div class="entel-eng-section" style="--accent:#5f7f75;">Distribución estadística de velocidades</div>', unsafe_allow_html=True)
 render_entel_fixed_table(
     format_entel_display_table(entel_wind_distribution_df, formats={"Probabilidad [%]": "{:.2f}", "Horas/año": "{:,.1f}", "Potencia media bin [kW]": "{:,.3f}", "Energía bin [kWh/año]": "{:,.1f}"}),
@@ -6930,16 +6955,16 @@ render_entel_fixed_table(
     format_entel_display_table(entel_monthly_df, formats={"Producción esperada [kWh/mes]": "{:,.1f}", "Participación anual [%]": "{:.2f}", "Producción serie directa [kWh/periodo]": "{:,.1f}"}),
     widths=[10, 17, 13, 18, 42],
 )
-st.plotly_chart(entel_month_fig, use_container_width=True, key="consolidated_month")
+render_entel_print_safe_chart(entel_month_fig, key="consolidated_month")
 st.markdown('<div class="entel-eng-section" style="--accent:#2f5f73;">Producción energética anual y pérdidas</div>', unsafe_allow_html=True)
 render_entel_fixed_table(
     format_entel_display_table(entel_losses_df, formats={"Energía anual [kWh/año]": "{:,.1f}", "Pérdida aplicada [kWh/año]": "{:,.1f}", "Pérdida sobre aero [%]": "{:.2f}"}),
     widths=[15, 15, 15, 40, 15],
 )
-st.plotly_chart(entel_energy_waterfall_fig, use_container_width=True, key="consolidated_energy_waterfall")
+render_entel_print_safe_chart(entel_energy_waterfall_fig, key="consolidated_energy_waterfall")
 st.markdown('<div class="entel-eng-section" style="--accent:#2f5f73;">Curva de potencia utilizada en la simulación</div>', unsafe_allow_html=True)
-st.plotly_chart(entel_power_fig, use_container_width=True, key="consolidated_power")
-st.plotly_chart(entel_cp_fig, use_container_width=True, key="consolidated_cp")
+render_entel_print_safe_chart(entel_power_fig, key="consolidated_power")
+render_entel_print_safe_chart(entel_cp_fig, key="consolidated_cp")
 render_entel_fixed_table(format_entel_display_table(entel_performance_curve_df, precision=3), widths=[7, 9, 10, 8, 16, 13, 7, 7, 7, 16])
 st.markdown('<div class="entel-eng-section" style="--accent:#2f5f73;">3.2.3 Supuestos del cálculo</div>', unsafe_allow_html=True)
 render_entel_fixed_table(entel_assumptions_df, widths=[24, 28, 48])
@@ -6984,15 +7009,15 @@ st.markdown('<div class="entel-eng-section" style="--accent:#d9a766;">Velocidade
 render_entel_fixed_table(format_entel_display_table(entel_aero_operating_df, formats={"Valor": "{:,.3f}"}), widths=[28, 15, 13, 44])
 aero_con_col1, aero_con_col2 = st.columns(2)
 with aero_con_col1:
-    st.plotly_chart(entel_aero_power_fig, use_container_width=True, key="consolidated_aero_power")
+    render_entel_print_safe_chart(entel_aero_power_fig, key="consolidated_aero_power")
 with aero_con_col2:
-    st.plotly_chart(entel_aero_cp_fig, use_container_width=True, key="consolidated_aero_cp")
+    render_entel_print_safe_chart(entel_aero_cp_fig, key="consolidated_aero_cp")
 st.markdown('<div class="entel-eng-section" style="--accent:#d9a766;">Producción energética anual estimada por viento medio</div>', unsafe_allow_html=True)
 render_entel_fixed_table(format_entel_display_table(entel_mean_wind_df, formats={"AEP estimado [kWh/año]": "{:,.1f}", "Potencia promedio [kW]": "{:,.3f}", "Factor planta [%]": "{:.2f}"}), widths=[18, 24, 22, 18, 18])
-st.plotly_chart(entel_aero_energy_fig, use_container_width=True, key="consolidated_aero_energy")
+render_entel_print_safe_chart(entel_aero_energy_fig, key="consolidated_aero_energy")
 st.markdown('<div class="entel-eng-section" style="--accent:#d9a766;">Ruido, vibración y estabilidad operacional</div>', unsafe_allow_html=True)
 render_entel_fixed_table(entel_aero_stability_df, widths=[18, 17, 21, 44])
-st.plotly_chart(entel_aero_stability_fig, use_container_width=True, key="consolidated_aero_stability")
+render_entel_print_safe_chart(entel_aero_stability_fig, key="consolidated_aero_stability")
 st.markdown(
     comment_box(
         "Conclusiones aerodinámicas relevantes",
@@ -7035,10 +7060,10 @@ render_entel_fixed_table(entel_electrical_specs_df, widths=[18, 25, 22, 35])
 st.markdown('<div class="entel-eng-section" style="--accent:#2f5f73;">Comportamiento eléctrico por velocidad de viento</div>', unsafe_allow_html=True)
 elec_con_col1, elec_con_col2 = st.columns(2)
 with elec_con_col1:
-    st.plotly_chart(entel_voltage_fig, use_container_width=True, key="consolidated_voltage")
+    render_entel_print_safe_chart(entel_voltage_fig, key="consolidated_voltage")
 with elec_con_col2:
-    st.plotly_chart(entel_current_fig, use_container_width=True, key="consolidated_current")
-st.plotly_chart(entel_power_elec_fig, use_container_width=True, key="consolidated_power_elec")
+    render_entel_print_safe_chart(entel_current_fig, key="consolidated_current")
+render_entel_print_safe_chart(entel_power_elec_fig, key="consolidated_power_elec")
 st.markdown('<div class="entel-eng-section" style="--accent:#2f5f73;">Límites, márgenes y calidad eléctrica</div>', unsafe_allow_html=True)
 render_entel_fixed_table(format_entel_display_table(entel_electrical_limits_df, formats={"Valor modelo": "{:,.2f}", "Límite/referencia": "{:,.2f}", "Margen [%]": "{:,.2f}"}), widths=[22, 13, 15, 10, 28, 12])
 st.markdown('<div class="entel-eng-section" style="--accent:#2f5f73;">Compatibilidad on-grid / off-grid</div>', unsafe_allow_html=True)
@@ -7103,9 +7128,9 @@ st.markdown('<div class="entel-eng-section" style="--accent:#5f7f75;">Indicadore
 render_entel_fixed_table(format_entel_display_table(entel_monitoring_status_df, formats={"Participación [%]": "{:.1f}"}), widths=[36, 24, 40])
 monitor_con_col1, monitor_con_col2 = st.columns(2)
 with monitor_con_col1:
-    st.plotly_chart(entel_monitoring_status_fig, use_container_width=True, key="consolidated_monitor_status")
+    render_entel_print_safe_chart(entel_monitoring_status_fig, key="consolidated_monitor_status")
 with monitor_con_col2:
-    st.plotly_chart(entel_monitoring_section_fig, use_container_width=True, key="consolidated_monitor_section")
+    render_entel_print_safe_chart(entel_monitoring_section_fig, key="consolidated_monitor_section")
 st.markdown('<div class="entel-eng-section" style="--accent:#5f7f75;">Cobertura por familia técnica</div>', unsafe_allow_html=True)
 render_entel_fixed_table(format_entel_display_table(entel_monitoring_section_pivot_df, formats={"Cobertura lista o contemplada [%]": "{:.1f}"}), widths=[26, 13, 10, 12, 13, 10, 16])
 st.markdown('<div class="entel-eng-section" style="--accent:#5f7f75;">Integración valorada para continuidad operacional</div>', unsafe_allow_html=True)
