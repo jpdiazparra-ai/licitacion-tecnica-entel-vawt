@@ -1935,16 +1935,23 @@ def load_entel_proposal_7810_from_url(url: str = ENTEL_PROPOSAL_7810_URL) -> dic
                 continue
             if current_point == "6":
                 is_numbered_stage = bool(re.match(r"^\d+$", first_clean))
+                valid_summary_axis = first_clean in {
+                    "Base tecnológica VAWT",
+                    "Investigación y selección de configuración",
+                    "Validación piloto e industrialización",
+                    "Respaldo documental",
+                }
                 if is_numbered_stage:
-                    records.append({
-                        "Punto RFP": current_point,
-                        "Subcapítulo": "6.2 Etapas de desarrollo tecnológico ejecutadas",
-                        "Concepto": first_clean,
-                        "Solicitud / recomendación RFP": second,
-                        "Respuesta incluida en oferta": fifth,
-                    })
+                    if fifth:
+                        records.append({
+                            "Punto RFP": current_point,
+                            "Subcapítulo": "6.2 Etapas de desarrollo tecnológico ejecutadas",
+                            "Concepto": first_clean,
+                            "Solicitud / recomendación RFP": second,
+                            "Respuesta incluida en oferta": fifth,
+                        })
                 else:
-                    if second:
+                    if valid_summary_axis and second:
                         records.append({
                             "Punto RFP": current_point,
                             "Subcapítulo": "6.1 Síntesis de experiencia declarada",
