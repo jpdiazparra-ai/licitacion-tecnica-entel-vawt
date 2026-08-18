@@ -13,10 +13,10 @@ import io
 import os
 import re
 import urllib.request
-from reportlab.lib.pagesizes import A4
+from reportlab.lib.pagesizes import A4, letter
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.units import cm
+from reportlab.lib.units import cm, inch
 from reportlab.platypus import (
     SimpleDocTemplate,
     Paragraph,
@@ -3431,65 +3431,127 @@ def matplotlib_chart_png(spec) -> bytes:
     return img_buffer.getvalue()
 
 
+def _pdf_paragraph(text, style):
+    safe_text = escape(str(text)).replace("\n", "<br/>")
+    return Paragraph(safe_text, style)
+
+
+def _pdf_column_widths(clean_df: pd.DataFrame, available_width: float) -> list[float]:
+    if clean_df.empty:
+        return [available_width]
+    weights = []
+    for col in clean_df.columns:
+        samples = [str(col)] + clean_df[col].astype(str).head(40).tolist()
+        max_len = max((len(item) for item in samples), default=1)
+        weights.append(min(max(max_len, 8), 42))
+    total = sum(weights) or 1
+    return [available_width * weight / total for weight in weights]
+
+
+def _pdf_table_from_df(df_table: pd.DataFrame, available_width: float, body_font_size: int = 6) -> Table:
+    clean_df = _rows_df(df_table).fillna("").astype(str).reset_index(drop=True)
+    if clean_df.empty:
+        clean_df = pd.DataFrame({"Sin información": ["-"]})
+
+    styles = getSampleStyleSheet()
+    header_style = styles["BodyText"].clone("pdf_table_header")
+    header_style.fontName = "Helvetica-Bold"
+    header_style.fontSize = max(body_font_size, 6)
+    header_style.leading = max(body_font_size + 1, 7)
+    header_style.textColor = colors.whitesmoke
+
+    body_style = styles["BodyText"].clone("pdf_table_body")
+    body_style.fontName = "Helvetica"
+    body_style.fontSize = body_font_size
+    body_style.leading = body_font_size + 1.5
+
+    data = [[_pdf_paragraph(col, header_style) for col in clean_df.columns]]
+    for _, row in clean_df.iterrows():
+        data.append([_pdf_paragraph(value, body_style) for value in row.tolist()])
+
+    col_widths = _pdf_column_widths(clean_df, available_width)
+    table = Table(data, colWidths=col_widths, repeatRows=1, splitByRow=1)
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#263447")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+        ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+        ("FONTSIZE", (0, 0), (-1, 0), body_font_size),
+        ("FONTSIZE", (0, 1), (-1, -1), body_font_size),
+        ("GRID", (0, 0), (-1, -1), 0.25, colors.HexColor("#d7dee8")),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f4f7fa")]),
+    ]))
+    return table
+
+
 def build_section_pdf(section_title: str, section_rows=None, extra_sheets=None, figures=None) -> bytes:
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=1.1 * cm, leftMargin=1.1 * cm)
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        rightMargin=0.42 * inch,
+        leftMargin=0.42 * inch,
+        topMargin=0.42 * inch,
+        bottomMargin=0.50 * inch,
+        allowSplitting=1,
+    )
+    available_width = doc.width
     styles = getSampleStyleSheet()
+    title_style = styles["Title"].clone("pdf_letter_title")
+    title_style.fontSize = 15
+    title_style.leading = 18
+    title_style.spaceAfter = 8
+
+    h2_style = styles["Heading2"].clone("pdf_letter_h2")
+    h2_style.fontSize = 10
+    h2_style.leading = 12
+    h2_style.spaceBefore = 4
+    h2_style.spaceAfter = 6
+
+    body_style = styles["BodyText"].clone("pdf_letter_body")
+    body_style.fontSize = 7.5
+    body_style.leading = 9.5
+
     story = [
-        Paragraph(section_title, styles["Title"]),
-        Spacer(1, 10),
-        Paragraph("Exportación técnica de pestaña con contexto del panel principal y gráficos del modelo.", styles["BodyText"]),
-        Spacer(1, 12),
+        Paragraph(section_title, title_style),
+        Paragraph(
+            "PDF carta nativo generado desde la aplicación. La paginación se controla por filas y por secciones para evitar cortes del navegador.",
+            body_style,
+        ),
+        Spacer(1, 8),
     ]
 
     context_df = globals().get("download_context_df", pd.DataFrame())
     if isinstance(context_df, pd.DataFrame) and not context_df.empty:
-        story.append(Paragraph("Parámetros de prueba del panel izquierdo", styles["Heading2"]))
-        ctx = context_df[["Grupo", "Campo", "Valor"]].copy()
-        ctx["Valor"] = ctx["Valor"].astype(str)
-        table_data = [ctx.columns.tolist()] + ctx.values.tolist()
-        table = Table(table_data, repeatRows=1)
-        table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#334155")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, -1), 7),
-            ("GRID", (0, 0), (-1, -1), 0.25, colors.lightgrey),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ]))
-        story.append(table)
-        story.append(Spacer(1, 12))
+        story.append(Paragraph("Parámetros de prueba del panel izquierdo", h2_style))
+        ctx_cols = [col for col in ["Grupo", "Campo", "Valor"] if col in context_df.columns]
+        ctx = context_df[ctx_cols].copy() if ctx_cols else context_df.copy()
+        story.append(_pdf_table_from_df(ctx, available_width, body_font_size=6))
+        story.append(PageBreak())
 
     section_df = _rows_df(section_rows)
     if not section_df.empty:
-        story.append(Paragraph("Información de la pestaña", styles["Heading2"]))
-        sec = section_df.head(35).copy()
-        sec = sec.astype(str)
-        table_data = [sec.columns.tolist()] + sec.values.tolist()
-        table = Table(table_data, repeatRows=1)
-        table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#475569")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, -1), 7),
-            ("GRID", (0, 0), (-1, -1), 0.25, colors.lightgrey),
-            ("VALIGN", (0, 0), (-1, -1), "TOP"),
-        ]))
-        story.append(table)
+        story.append(Paragraph("Información consolidada de la pestaña", h2_style))
+        section_font = 5 if len(section_df.columns) >= 7 else 6
+        story.append(_pdf_table_from_df(section_df, available_width, body_font_size=section_font))
         story.append(PageBreak())
 
-    chart_specs = default_pdf_chart_specs()
+    chart_specs = figures or default_pdf_chart_specs()
     for spec in chart_specs:
-        story.append(Paragraph(str(spec["title"]), styles["Heading2"]))
-        story.append(Spacer(1, 6))
+        story.append(Paragraph(str(spec["title"]), h2_style))
+        story.append(Spacer(1, 4))
         try:
             png_bytes = matplotlib_chart_png(spec)
-            img = Image(io.BytesIO(png_bytes), width=480, height=280)
+            img = Image(io.BytesIO(png_bytes), width=available_width, height=min(available_width * 0.52, 3.85 * inch))
             story.append(img)
         except Exception as exc:
             story.append(Paragraph(
                 f"No se pudo renderizar este gráfico en PDF. Detalle: {escape(str(exc))}",
-                styles["BodyText"],
+                body_style,
             ))
         story.append(PageBreak())
 
@@ -3497,18 +3559,9 @@ def build_section_pdf(section_title: str, section_rows=None, extra_sheets=None, 
         sheet_df = _rows_df(raw_df)
         if sheet_df.empty:
             continue
-        story.append(Paragraph(f"Datos anexos: {raw_name}", styles["Heading2"]))
-        short_df = sheet_df.head(18).copy().astype(str)
-        table_data = [short_df.columns.tolist()] + short_df.values.tolist()
-        table = Table(table_data, repeatRows=1)
-        table.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#334155")),
-            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
-            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
-            ("FONTSIZE", (0, 0), (-1, -1), 6),
-            ("GRID", (0, 0), (-1, -1), 0.25, colors.lightgrey),
-        ]))
-        story.append(table)
+        story.append(Paragraph(f"Anexo técnico - {raw_name}", h2_style))
+        annex_font = 5 if len(sheet_df.columns) >= 7 else 6
+        story.append(_pdf_table_from_df(sheet_df, available_width, body_font_size=annex_font))
         story.append(PageBreak())
 
     doc.build(story)
@@ -3696,14 +3749,14 @@ def render_section_download_button(
         use_container_width=True,
     )
     if st.button(
-        f"📄 Generar PDF – {section_title}",
+        f"📄 Generar PDF carta nativo – {section_title}",
         key=f"make_pdf_{safe_key}",
         use_container_width=True,
-        help="Genera un PDF con contexto, tablas resumidas y gráficos técnicos del modelo.",
+        help="Genera un PDF tamaño carta desde Python, con paginación por filas y gráficos estáticos para evitar cortes de Safari.",
     ):
         pdf_bytes = build_section_pdf(section_title, section_rows, extra_sheets, pdf_figures)
         st.download_button(
-            label=f"📥 Descargar PDF – {section_title}",
+            label=f"📥 Descargar PDF carta – {section_title}",
             data=pdf_bytes,
             file_name=f"{_download_slug(section_title)}.pdf",
             mime="application/pdf",
