@@ -1597,6 +1597,11 @@ ENTEL_INTRODUCTION_URL = (
     "2PACX-1vTMbuG9VMHtxEYLcLIHmw4s5Y6MHF1HwsMOD_sfyt8ZliE2c2_JRZaO7fRi-uacYQ/"
     "pub?output=csv&gid=1506621143"
 )
+ENTEL_INSTALLATION_CONDITIONS_URL = (
+    "https://docs.google.com/spreadsheets/d/e/"
+    "2PACX-1vTMbuG9VMHtxEYLcLIHmw4s5Y6MHF1HwsMOD_sfyt8ZliE2c2_JRZaO7fRi-uacYQ/"
+    "pub?output=csv&gid=39270918"
+)
 ENTEL_SUPPLIER_EXPERIENCE_URL = (
     "https://docs.google.com/spreadsheets/d/e/"
     "2PACX-1vTMbuG9VMHtxEYLcLIHmw4s5Y6MHF1HwsMOD_sfyt8ZliE2c2_JRZaO7fRi-uacYQ/"
@@ -1664,6 +1669,52 @@ def load_entel_introduction_from_url(url: str = ENTEL_INTRODUCTION_URL) -> dict:
         "source": source,
         "url": url,
         "df": pd.DataFrame({"Sección": [title] * max(len(paragraphs), 1), "Texto": paragraphs or [text]}),
+    }
+
+
+@st.cache_data(show_spinner=False, ttl=900)
+def load_entel_installation_conditions_from_url(url: str = ENTEL_INSTALLATION_CONDITIONS_URL) -> dict:
+    fallback_df = pd.DataFrame([
+        {"Documentación técnica solicitada": "Planos de montaje.", "Anexo de respaldo": "Anexo 1"},
+        {"Documentación técnica solicitada": "Requerimientos de obra civil.", "Anexo de respaldo": "Anexo 2"},
+        {"Documentación técnica solicitada": "Memoria de cálculo estructural.", "Anexo de respaldo": "Anexo 3"},
+        {"Documentación técnica solicitada": "Cargas transmitidas a la fundación.", "Anexo de respaldo": "Anexo 4"},
+        {"Documentación técnica solicitada": "Requisitos de puesta a tierra.", "Anexo de respaldo": "Anexo 5"},
+        {"Documentación técnica solicitada": "Requisitos de seguridad operacional.", "Anexo de respaldo": "Anexo 6"},
+    ])
+    try:
+        raw = _read_remote_csv_with_timeout(url, timeout=5.0, dtype=str).fillna("")
+        raw = raw.map(lambda value: str(value).replace("\xa0", " ").strip())
+        source = "URL Google Sheets - 5. Condiciones de Instalación"
+    except Exception:
+        return {
+            "df": fallback_df,
+            "source": "Fallback local",
+            "url": url,
+        }
+
+    if raw.empty:
+        clean_df = fallback_df
+    else:
+        raw.columns = [re.sub(r"\s+", " ", str(col).replace("\xa0", " ").strip()) for col in raw.columns]
+        doc_col = next((col for col in raw.columns if "doc" in col.lower()), raw.columns[0])
+        annex_col = next((col for col in raw.columns if "anexo" in col.lower()), raw.columns[1] if len(raw.columns) > 1 else raw.columns[0])
+        clean_df = (
+            raw[[doc_col, annex_col]]
+            .rename(columns={doc_col: "Documentación técnica solicitada", annex_col: "Anexo de respaldo"})
+            .replace("", np.nan)
+            .dropna(how="all")
+            .fillna("")
+            .reset_index(drop=True)
+        )
+        clean_df = clean_df[clean_df["Documentación técnica solicitada"].astype(str).str.strip().ne("")]
+        if clean_df.empty:
+            clean_df = fallback_df
+
+    return {
+        "df": clean_df,
+        "source": source,
+        "url": url,
     }
 
 
@@ -5347,6 +5398,8 @@ entel_introduction_title = entel_introduction_payload.get("title", "Introducció
 entel_introduction_paragraphs = entel_introduction_payload.get("paragraphs", [])
 entel_introduction_df = entel_introduction_payload.get("df", pd.DataFrame())
 entel_introduction_source = entel_introduction_payload.get("source", "URL Google Sheets - Introducción")
+entel_installation_conditions_payload = load_entel_installation_conditions_from_url()
+entel_installation_conditions_source = entel_installation_conditions_payload.get("source", "URL Google Sheets - 5. Condiciones de Instalación")
 entel_supplier_experience_payload = load_entel_supplier_experience_from_url()
 entel_supplier_experience_title = entel_supplier_experience_payload.get("title", "6. EXPERIENCIA DEL PROVEEDOR")
 entel_supplier_experience_subtitle = entel_supplier_experience_payload.get("subtitle", "")
@@ -5418,6 +5471,7 @@ if entel_proposal_5_view_df.empty:
         })
         .reset_index(drop=True)
     )
+entel_proposal_5_view_df = entel_installation_conditions_payload.get("df", pd.DataFrame()).copy()
 entel_proposal_6_view_df = entel_proposal_6_display_df[entel_proposal_table_cols].copy()
 if entel_proposal_6_view_df.empty:
     entel_proposal_6_view_df = (
@@ -6930,7 +6984,17 @@ if entel_monitoring_source_note:
 
 st.markdown('<div class="entel-print-page-break"></div>', unsafe_allow_html=True)
 st.markdown('<div class="entel-eng-section" style="--accent:#5f7f75;">5. Condiciones de Instalación</div>', unsafe_allow_html=True)
-render_entel_fixed_table(entel_proposal_5_view_df, widths=[22, 21, 12, 30, 15] if len(entel_proposal_5_view_df.columns) == 5 else [28, 37, 35])
+st.markdown(
+    """
+    <div class="entel-eng-panel" style="--accent:#5f7f75;">
+      <div class="entel-eng-panel__eyebrow">Base documental de instalación</div>
+      <div class="entel-eng-panel__title">Documentación técnica y anexos requeridos para montaje, obra civil, fundación, puesta a tierra y seguridad operacional.</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
+render_entel_fixed_table(entel_proposal_5_view_df, widths=[72, 28])
+st.caption(f"Fuente trazable: {entel_installation_conditions_source}. Hoja publicada: 5. Condiciones de Instalación.")
 
 st.markdown('<div class="entel-eng-section" style="--accent:#5f7f75;">6. Experiencia del Proveedor</div>', unsafe_allow_html=True)
 if entel_supplier_experience_subtitle:
