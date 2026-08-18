@@ -1597,6 +1597,11 @@ ENTEL_INTRODUCTION_URL = (
     "2PACX-1vTMbuG9VMHtxEYLcLIHmw4s5Y6MHF1HwsMOD_sfyt8ZliE2c2_JRZaO7fRi-uacYQ/"
     "pub?output=csv&gid=1506621143"
 )
+ENTEL_SUPPLIER_EXPERIENCE_URL = (
+    "https://docs.google.com/spreadsheets/d/e/"
+    "2PACX-1vTMbuG9VMHtxEYLcLIHmw4s5Y6MHF1HwsMOD_sfyt8ZliE2c2_JRZaO7fRi-uacYQ/"
+    "pub?output=csv&gid=563161092"
+)
 ENTEL_REQ_EXC_URL = (
     "https://docs.google.com/spreadsheets/d/e/"
     "2PACX-1vTMbuG9VMHtxEYLcLIHmw4s5Y6MHF1HwsMOD_sfyt8ZliE2c2_JRZaO7fRi-uacYQ/"
@@ -1659,6 +1664,94 @@ def load_entel_introduction_from_url(url: str = ENTEL_INTRODUCTION_URL) -> dict:
         "source": source,
         "url": url,
         "df": pd.DataFrame({"Sección": [title] * max(len(paragraphs), 1), "Texto": paragraphs or [text]}),
+    }
+
+
+@st.cache_data(show_spinner=False, ttl=900)
+def load_entel_supplier_experience_from_url(url: str = ENTEL_SUPPLIER_EXPERIENCE_URL) -> dict:
+    fallback_main = pd.DataFrame([
+        {
+            "N.º": "1",
+            "Eje de experiencia": "Base tecnológica VAWT",
+            "Evidencia declarada": "Capacidades especializadas en investigación, diseño, ingeniería e integración de aerogeneradores de eje vertical.",
+        }
+    ])
+    fallback_docs = pd.DataFrame(columns=["N.º", "Tipo de respaldo", "Disponibilidad / alcance"])
+    fallback_areas = pd.DataFrame(columns=["N.º", "Área técnica", "Aplicación principal"])
+    try:
+        raw = _read_remote_csv_with_timeout(url, timeout=5.0, header=None, dtype=str).fillna("")
+        raw = raw.map(lambda value: str(value).replace("\xa0", " ").strip())
+        source = "URL Google Sheets - 6-Experiencia proveedor"
+    except Exception:
+        return {
+            "title": "6. EXPERIENCIA DEL PROVEEDOR",
+            "subtitle": "",
+            "main": fallback_main,
+            "documents": fallback_docs,
+            "areas": fallback_areas,
+            "note": "",
+            "source": "Fallback local",
+            "url": url,
+        }
+
+    title = ""
+    subtitle = ""
+    section = ""
+    main_rows = []
+    document_rows = []
+    area_rows = []
+    note = ""
+
+    for _, row in raw.iterrows():
+        values = [str(value).strip() for value in row.tolist()[:3]]
+        first, second, third = (values + ["", "", ""])[:3]
+        if not any(values):
+            continue
+        first_norm = re.sub(r"\s+", " ", first)
+        if first_norm.startswith("Nota:"):
+            note = first_norm
+            continue
+        upper_first = first_norm.upper()
+        if upper_first == "6. EXPERIENCIA DEL PROVEEDOR":
+            title = first_norm
+            section = ""
+            continue
+        if first_norm.startswith("Proceso "):
+            subtitle = first_norm
+            continue
+        if upper_first == "RESPALDO DOCUMENTAL":
+            section = "documents"
+            continue
+        if upper_first == "ÁREAS TÉCNICAS DE EXPERIENCIA":
+            section = "areas"
+            continue
+        if first_norm in {"N.º", "N°", "Nº"}:
+            if second == "Eje de experiencia":
+                section = "main"
+            elif second == "Tipo de respaldo":
+                section = "documents"
+            elif second == "Área técnica":
+                section = "areas"
+            continue
+        if section == "main" and first_norm and second and third:
+            main_rows.append({"N.º": first_norm, "Eje de experiencia": second, "Evidencia declarada": third})
+        elif section == "documents" and first_norm and second and third:
+            document_rows.append({"N.º": first_norm, "Tipo de respaldo": second, "Disponibilidad / alcance": third})
+        elif section == "areas" and first_norm and second and third:
+            area_rows.append({"N.º": first_norm, "Área técnica": second, "Aplicación principal": third})
+
+    main_df = pd.DataFrame(main_rows) if main_rows else fallback_main
+    docs_df = pd.DataFrame(document_rows) if document_rows else fallback_docs
+    areas_df = pd.DataFrame(area_rows) if area_rows else fallback_areas
+    return {
+        "title": title or "6. EXPERIENCIA DEL PROVEEDOR",
+        "subtitle": subtitle,
+        "main": main_df,
+        "documents": docs_df,
+        "areas": areas_df,
+        "note": note,
+        "source": source,
+        "url": url,
     }
 
 
@@ -5254,6 +5347,11 @@ entel_introduction_title = entel_introduction_payload.get("title", "Introducció
 entel_introduction_paragraphs = entel_introduction_payload.get("paragraphs", [])
 entel_introduction_df = entel_introduction_payload.get("df", pd.DataFrame())
 entel_introduction_source = entel_introduction_payload.get("source", "URL Google Sheets - Introducción")
+entel_supplier_experience_payload = load_entel_supplier_experience_from_url()
+entel_supplier_experience_title = entel_supplier_experience_payload.get("title", "6. EXPERIENCIA DEL PROVEEDOR")
+entel_supplier_experience_subtitle = entel_supplier_experience_payload.get("subtitle", "")
+entel_supplier_experience_source = entel_supplier_experience_payload.get("source", "URL Google Sheets - 6-Experiencia proveedor")
+entel_supplier_experience_note = entel_supplier_experience_payload.get("note", "")
 
 entel_proposal_7810_payload = load_entel_proposal_7810_from_url()
 entel_proposal_7810_df = entel_proposal_7810_payload["df"].copy()
@@ -5352,10 +5450,15 @@ entel_proposal_6_stages_df = (
     })
     .reset_index(drop=True)
 )
+entel_proposal_6_summary_df = entel_supplier_experience_payload.get("main", pd.DataFrame()).copy()
+entel_proposal_6_documents_df = entel_supplier_experience_payload.get("documents", pd.DataFrame()).copy()
+entel_proposal_6_areas_df = entel_supplier_experience_payload.get("areas", pd.DataFrame()).copy()
 if entel_proposal_6_summary_df.empty:
     entel_proposal_6_summary_df = entel_proposal_6_view_df.copy()
-if entel_proposal_6_stages_df.empty:
-    entel_proposal_6_stages_df = pd.DataFrame()
+if entel_proposal_6_documents_df.empty:
+    entel_proposal_6_documents_df = pd.DataFrame()
+if entel_proposal_6_areas_df.empty:
+    entel_proposal_6_areas_df = pd.DataFrame()
 entel_proposal_7_concepts_view_df = entel_proposal_7_concepts_df[entel_proposal_concepts_cols].copy()
 entel_proposal_7_rfp_view_df = entel_proposal_7_rfp_df[entel_proposal_table_cols].copy()
 entel_proposal_7_sla_view_df = entel_proposal_7_sla_df[entel_proposal_table_cols].copy()
@@ -6830,11 +6933,30 @@ st.markdown('<div class="entel-eng-section" style="--accent:#5f7f75;">5. Condici
 render_entel_fixed_table(entel_proposal_5_view_df, widths=[22, 21, 12, 30, 15] if len(entel_proposal_5_view_df.columns) == 5 else [28, 37, 35])
 
 st.markdown('<div class="entel-eng-section" style="--accent:#5f7f75;">6. Experiencia del Proveedor</div>', unsafe_allow_html=True)
-st.markdown('<div class="entel-eng-section" style="--accent:#5f7f75;">6.1 Síntesis de experiencia declarada</div>', unsafe_allow_html=True)
-render_entel_fixed_table(entel_proposal_6_summary_df, widths=[24, 76])
-if not entel_proposal_6_stages_df.empty:
-    st.markdown('<div class="entel-eng-section" style="--accent:#5f7f75;">6.2 Etapas de desarrollo tecnológico ejecutadas</div>', unsafe_allow_html=True)
-    render_entel_fixed_table(entel_proposal_6_stages_df, widths=[7, 25, 68])
+if entel_supplier_experience_subtitle:
+    st.markdown(
+        f"""
+        <div class="entel-eng-panel" style="--accent:#5f7f75;">
+          <div class="entel-eng-panel__eyebrow">Fuente técnica específica</div>
+          <div class="entel-eng-panel__title">{escape(entel_supplier_experience_subtitle)}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+st.markdown('<div class="entel-eng-section" style="--accent:#5f7f75;">6.1 Ejes de experiencia y evidencia declarada</div>', unsafe_allow_html=True)
+render_entel_fixed_table(entel_proposal_6_summary_df, widths=[7, 23, 70])
+if not entel_proposal_6_documents_df.empty:
+    st.markdown('<div class="entel-eng-section" style="--accent:#5f7f75;">6.2 Respaldo documental</div>', unsafe_allow_html=True)
+    render_entel_fixed_table(entel_proposal_6_documents_df, widths=[7, 63, 30])
+if not entel_proposal_6_areas_df.empty:
+    st.markdown('<div class="entel-eng-section" style="--accent:#5f7f75;">6.3 Áreas técnicas de experiencia</div>', unsafe_allow_html=True)
+    render_entel_fixed_table(entel_proposal_6_areas_df, widths=[7, 38, 55])
+if entel_supplier_experience_note:
+    st.markdown(
+        comment_box("Nota de alcance tecnológico", [comment_paragraph(entel_supplier_experience_note)]),
+        unsafe_allow_html=True,
+    )
+st.caption(f"Fuente trazable: {entel_supplier_experience_source}. Hoja publicada: 6-Experiencia proveedor.")
 
 st.markdown('<div class="entel-print-page-break"></div>', unsafe_allow_html=True)
 st.markdown('<div class="entel-eng-section" style="--accent:#d9a766;">7.- Garantias</div>', unsafe_allow_html=True)
@@ -6917,9 +7039,9 @@ extra_sheets={
     "Monitoreo análisis": entel_monitoring_analysis_df,
     "Monitoreo integración": entel_monitoring_integration_df,
     "Propuesta 5 instalación": entel_proposal_5_view_df,
-    "Propuesta 6 experiencia": entel_proposal_6_view_df,
-    "Prop 6 síntesis": entel_proposal_6_summary_df,
-    "Prop 6 etapas": entel_proposal_6_stages_df,
+    "6 experiencia ejes": entel_proposal_6_summary_df,
+    "6 experiencia respaldo": entel_proposal_6_documents_df,
+    "6 experiencia áreas": entel_proposal_6_areas_df,
     "Propuesta 7 resumen": entel_proposal_point_summary_df,
     "Prop 7 conceptos": entel_proposal_7_concepts_view_df,
     "Prop 7 recomendación": entel_proposal_7_rfp_view_df,
