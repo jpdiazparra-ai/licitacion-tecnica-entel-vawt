@@ -6866,7 +6866,7 @@ st.markdown('<div class="entel-eng-section" style="--accent:#d9a766;">Tabla aero
 render_entel_fixed_table(format_entel_display_table(entel_aero_curve_df, precision=3), widths=[6, 7, 7, 6, 6, 6, 5, 6, 5, 5, 5, 5, 5, 5, 21])
 
 st.markdown('<div class="entel-print-page-break"></div>', unsafe_allow_html=True)
-st.markdown('<div class="entel-elec-section">3.4 Características Eléctricas</div>', unsafe_allow_html=True)
+st.markdown('<div class="entel-eng-section" style="--accent:#2f5f73;">3.4 Características Eléctricas</div>', unsafe_allow_html=True)
 st.markdown(
     comment_box(
         "Alcance eléctrico declarado",
@@ -6888,20 +6888,20 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-st.markdown('<div class="entel-elec-section">Requisitos eléctricos solicitados por Entel</div>', unsafe_allow_html=True)
+st.markdown('<div class="entel-eng-section" style="--accent:#2f5f73;">Requisitos eléctricos solicitados por Entel</div>', unsafe_allow_html=True)
 render_entel_fixed_table(entel_electrical_specs_df, widths=[18, 25, 22, 35])
-st.markdown('<div class="entel-elec-section">Comportamiento eléctrico por velocidad de viento</div>', unsafe_allow_html=True)
+st.markdown('<div class="entel-eng-section" style="--accent:#2f5f73;">Comportamiento eléctrico por velocidad de viento</div>', unsafe_allow_html=True)
 elec_con_col1, elec_con_col2 = st.columns(2)
 with elec_con_col1:
     st.plotly_chart(entel_voltage_fig, use_container_width=True, key="consolidated_voltage")
 with elec_con_col2:
     st.plotly_chart(entel_current_fig, use_container_width=True, key="consolidated_current")
 st.plotly_chart(entel_power_elec_fig, use_container_width=True, key="consolidated_power_elec")
-st.markdown('<div class="entel-elec-section">Límites, márgenes y calidad eléctrica</div>', unsafe_allow_html=True)
+st.markdown('<div class="entel-eng-section" style="--accent:#2f5f73;">Límites, márgenes y calidad eléctrica</div>', unsafe_allow_html=True)
 render_entel_fixed_table(format_entel_display_table(entel_electrical_limits_df, formats={"Valor modelo": "{:,.2f}", "Límite/referencia": "{:,.2f}", "Margen [%]": "{:,.2f}"}), widths=[22, 13, 15, 10, 28, 12])
-st.markdown('<div class="entel-elec-section">Compatibilidad on-grid / off-grid</div>', unsafe_allow_html=True)
+st.markdown('<div class="entel-eng-section" style="--accent:#2f5f73;">Compatibilidad on-grid / off-grid</div>', unsafe_allow_html=True)
 render_entel_fixed_table(entel_grid_modes_df, widths=[12, 18, 38, 32])
-st.markdown('<div class="entel-elec-section">Cierre eléctrico requerido por Entel</div>', unsafe_allow_html=True)
+st.markdown('<div class="entel-eng-section" style="--accent:#2f5f73;">Cierre eléctrico requerido por Entel</div>', unsafe_allow_html=True)
 render_entel_fixed_table(entel_electrical_closing_df, widths=[18, 31, 21, 30])
 st.markdown(
     comment_box(
@@ -6915,7 +6915,7 @@ st.markdown(
     ),
     unsafe_allow_html=True,
 )
-st.markdown('<div class="entel-elec-section">Tabla eléctrica por bin de viento</div>', unsafe_allow_html=True)
+st.markdown('<div class="entel-eng-section" style="--accent:#2f5f73;">Tabla eléctrica por bin de viento</div>', unsafe_allow_html=True)
 render_entel_fixed_table(format_entel_display_table(entel_electrical_curve_df, precision=3), widths=[9, 9, 10, 10, 10, 9, 11, 10, 12, 10, 10])
 
 st.markdown('<div class="entel-print-page-break"></div>', unsafe_allow_html=True)
