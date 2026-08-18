@@ -1898,12 +1898,13 @@ def load_entel_proposal_7810_from_url(url: str = ENTEL_PROPOSAL_7810_URL) -> dic
             if first_clean.lower() in {"tema / categoría", "tema / categoria"} and second.lower() == "punto":
                 header_mode = "three_col"
                 continue
-            if re.match(r"^8\.\d+", first_clean):
+            is_security_category = current_point == "11" and bool(re.match(r"^\d+\.", first_clean))
+            if not is_security_category and re.match(r"^8\.\d+", first_clean):
                 current_point = "8"
                 current_subchapter = first_clean
                 header_mode = "three_col"
                 continue
-            point_match = re.match(r"^(5|6|7|8|9|10|11|12)(?:\.|-)", first_clean)
+            point_match = None if is_security_category else re.match(r"^(5|6|7|8|9|10|11|12)(?:\.|-)", first_clean)
             if point_match:
                 current_point = point_match.group(1)
                 if current_point == "5":
