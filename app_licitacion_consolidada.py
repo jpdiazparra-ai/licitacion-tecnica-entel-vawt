@@ -6341,19 +6341,20 @@ def render_entel_fixed_table(df_table: pd.DataFrame, widths: list[int] | None = 
     )
 
 
-def render_entel_print_safe_chart(fig, key: str, width: int = 920, height: int | None = None) -> None:
+def render_entel_print_safe_chart(fig, key: str, width: int = 860, height: int | None = None) -> None:
+    st.markdown('<div class="entel-chart-page-break"></div>', unsafe_allow_html=True)
     fig_print = copy.deepcopy(fig)
     base_height = height or int(fig_print.layout.height or 470)
     margin = fig_print.layout.margin
     fig_print.update_layout(
         autosize=False,
         width=width,
-        height=min(max(base_height, 390), 540),
+        height=min(max(base_height, 360), 460),
         margin=dict(
-            l=max(int(margin.l or 60), 58),
-            r=min(max(int(margin.r or 34), 28), 44),
-            t=min(max(int(margin.t or 78), 64), 102),
-            b=min(max(int(margin.b or 82), 74), 132),
+            l=max(int(margin.l or 58), 54),
+            r=min(max(int(margin.r or 30), 24), 38),
+            t=min(max(int(margin.t or 70), 56), 88),
+            b=min(max(int(margin.b or 76), 66), 108),
         ),
     )
     st.plotly_chart(
@@ -6761,11 +6762,18 @@ st.markdown(
             line-height: 1.12 !important;
             margin-top: 1.2mm !important;
         }
+        .entel-chart-page-break {
+            break-before: page !important;
+            page-break-before: always !important;
+            height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
         div[data-testid="stPlotlyChart"],
         .js-plotly-plot {
-            width: 190mm !important;
-            max-width: 190mm !important;
-            height: 106mm !important;
+            width: 184mm !important;
+            max-width: 184mm !important;
+            height: 94mm !important;
             min-height: 0 !important;
             margin: 0 auto 5mm auto !important;
             overflow: hidden !important;
@@ -6775,9 +6783,9 @@ st.markdown(
         .js-plotly-plot .plot-container,
         .js-plotly-plot .user-select-none,
         .js-plotly-plot .svg-container {
-            width: 190mm !important;
-            max-width: 190mm !important;
-            height: 106mm !important;
+            width: 184mm !important;
+            max-width: 184mm !important;
+            height: 94mm !important;
             overflow: hidden !important;
         }
         .js-plotly-plot .modebar,
@@ -6786,14 +6794,14 @@ st.markdown(
         }
         .js-plotly-plot .svg-container,
         .js-plotly-plot .main-svg {
-            width: 190mm !important;
-            max-width: 190mm !important;
+            width: 184mm !important;
+            max-width: 184mm !important;
         }
         .js-plotly-plot .svg-container {
-            height: 106mm !important;
+            height: 94mm !important;
         }
         .js-plotly-plot .main-svg {
-            height: 106mm !important;
+            height: 94mm !important;
         }
         .element-container:has(.js-plotly-plot) {
             margin: 0 0 5mm 0 !important;
@@ -6803,8 +6811,8 @@ st.markdown(
         }
         div[data-testid="stElementContainer"]:has(div[data-testid="stPlotlyChart"]),
         div[data-testid="element-container"]:has(div[data-testid="stPlotlyChart"]) {
-            width: 190mm !important;
-            max-width: 190mm !important;
+            width: 184mm !important;
+            max-width: 184mm !important;
             margin: 0 0 5mm 0 !important;
             break-inside: avoid !important;
             page-break-inside: avoid !important;
