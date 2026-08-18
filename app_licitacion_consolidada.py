@@ -1124,6 +1124,13 @@ st.markdown("""
 .top-jump-floating:hover {
     filter: brightness(1.12);
 }
+@media print {
+    .alert-jump-link,
+    .alert-jump-floating,
+    .top-jump-floating {
+        display: none !important;
+    }
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -6570,6 +6577,9 @@ st.markdown(
         [data-testid="stDecoration"],
         [data-testid="stSidebar"],
         [data-testid="collapsedControl"],
+        .alert-jump-link,
+        .alert-jump-floating,
+        .top-jump-floating,
         .stDeployButton,
         button[kind="header"],
         .stButton,
@@ -6720,22 +6730,45 @@ st.markdown(
         .js-plotly-plot {
             width: 100% !important;
             max-width: 100% !important;
+            height: 118mm !important;
             min-height: 0 !important;
             margin: 0 0 4mm 0 !important;
+            overflow: hidden !important;
+        }
+        .js-plotly-plot .plot-container,
+        .js-plotly-plot .user-select-none,
+        .js-plotly-plot .svg-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: 118mm !important;
+            overflow: hidden !important;
+        }
+        .js-plotly-plot .modebar,
+        .modebar-container {
+            display: none !important;
         }
         .js-plotly-plot .svg-container,
         .js-plotly-plot .main-svg {
             max-width: 100% !important;
         }
         .js-plotly-plot .svg-container {
-            height: 126mm !important;
+            height: 118mm !important;
         }
         .js-plotly-plot .main-svg {
-            height: 126mm !important;
+            height: 118mm !important;
         }
         .element-container:has(.js-plotly-plot) {
+            margin: 0 0 5mm 0 !important;
             break-inside: avoid !important;
             page-break-inside: avoid !important;
+            overflow: hidden !important;
+        }
+        div[data-testid="stElementContainer"]:has(div[data-testid="stPlotlyChart"]),
+        div[data-testid="element-container"]:has(div[data-testid="stPlotlyChart"]) {
+            margin: 0 0 5mm 0 !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+            overflow: hidden !important;
         }
         .entel-print-page-break {
             break-before: page !important;
