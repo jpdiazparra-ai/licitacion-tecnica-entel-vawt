@@ -6587,8 +6587,8 @@ st.markdown(
             display: none !important;
         }
         .main .block-container {
-            max-width: 200mm !important;
-            width: 200mm !important;
+            max-width: 196mm !important;
+            width: 196mm !important;
             padding: 0 !important;
             margin: 0 auto !important;
             overflow: visible !important;
@@ -6597,6 +6597,8 @@ st.markdown(
         .main .block-container > div > div,
         div[data-testid="stVerticalBlock"],
         div[data-testid="stVerticalBlock"] > div,
+        div[data-testid="stHorizontalBlock"],
+        div[data-testid="stHorizontalBlock"] > div,
         div[data-testid="stElementContainer"],
         div[data-testid="element-container"] {
             gap: 0 !important;
@@ -6604,6 +6606,14 @@ st.markdown(
             margin-top: 0 !important;
             margin-bottom: 0 !important;
             overflow: visible !important;
+        }
+        div[data-testid="stHorizontalBlock"] {
+            display: block !important;
+        }
+        div[data-testid="stHorizontalBlock"] > div {
+            width: 100% !important;
+            max-width: 100% !important;
+            flex: 0 0 100% !important;
         }
         .entel-eng-panel,
         .entel-intro-panel,
@@ -6728,19 +6738,21 @@ st.markdown(
         }
         div[data-testid="stPlotlyChart"],
         .js-plotly-plot {
-            width: 100% !important;
-            max-width: 100% !important;
-            height: 118mm !important;
+            width: 190mm !important;
+            max-width: 190mm !important;
+            height: 106mm !important;
             min-height: 0 !important;
-            margin: 0 0 4mm 0 !important;
+            margin: 0 auto 5mm auto !important;
             overflow: hidden !important;
         }
+        div[data-testid="stPlotlyChart"] > div,
+        div[data-testid="stPlotlyChart"] > div > div,
         .js-plotly-plot .plot-container,
         .js-plotly-plot .user-select-none,
         .js-plotly-plot .svg-container {
-            width: 100% !important;
-            max-width: 100% !important;
-            height: 118mm !important;
+            width: 190mm !important;
+            max-width: 190mm !important;
+            height: 106mm !important;
             overflow: hidden !important;
         }
         .js-plotly-plot .modebar,
@@ -6749,13 +6761,14 @@ st.markdown(
         }
         .js-plotly-plot .svg-container,
         .js-plotly-plot .main-svg {
-            max-width: 100% !important;
+            width: 190mm !important;
+            max-width: 190mm !important;
         }
         .js-plotly-plot .svg-container {
-            height: 118mm !important;
+            height: 106mm !important;
         }
         .js-plotly-plot .main-svg {
-            height: 118mm !important;
+            height: 106mm !important;
         }
         .element-container:has(.js-plotly-plot) {
             margin: 0 0 5mm 0 !important;
@@ -6765,6 +6778,8 @@ st.markdown(
         }
         div[data-testid="stElementContainer"]:has(div[data-testid="stPlotlyChart"]),
         div[data-testid="element-container"]:has(div[data-testid="stPlotlyChart"]) {
+            width: 190mm !important;
+            max-width: 190mm !important;
             margin: 0 0 5mm 0 !important;
             break-inside: avoid !important;
             page-break-inside: avoid !important;
