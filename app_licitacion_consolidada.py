@@ -1860,13 +1860,24 @@ def load_entel_proposal_7810_from_url(url: str = ENTEL_PROPOSAL_7810_URL) -> dic
         last_concept = ""
         header_mode = "three_col"
         for _, row in raw.iterrows():
-            values = [str(value).replace("\xa0", " ").strip() for value in row.tolist()[:3]]
+            values = [str(value).replace("\xa0", " ").strip() for value in row.tolist()[:5]]
             first = values[0] if len(values) > 0 else ""
             second = values[1] if len(values) > 1 else ""
             third = values[2] if len(values) > 2 else ""
+            fifth = values[4] if len(values) > 4 else ""
             if not any(values):
                 continue
             first_clean = re.sub(r"\s+", " ", first)
+            if current_point == "6" and first_clean.lower() in {"eje de experiencia", "n°", "nº", "n"}:
+                if fifth:
+                    records.append({
+                        "Punto RFP": current_point,
+                        "Subcapítulo": "6.2 Etapas de desarrollo tecnológico ejecutadas",
+                        "Concepto": "",
+                        "Solicitud / recomendación RFP": "",
+                        "Respuesta incluida en oferta": fifth,
+                    })
+                continue
             if first_clean.lower() in {"conceptos", "concepto"}:
                 second_norm = second.lower()
                 third_norm = third.lower()
@@ -1919,6 +1930,26 @@ def load_entel_proposal_7810_from_url(url: str = ENTEL_PROPOSAL_7810_URL) -> dic
                 header_mode = "three_col"
                 continue
             if current_point not in {"5", "6", "7", "8", "9", "10", "11", "12"}:
+                continue
+            if current_point == "6":
+                if second:
+                    records.append({
+                        "Punto RFP": current_point,
+                        "Subcapítulo": "6.1 Síntesis de experiencia declarada",
+                        "Concepto": first_clean or "Eje de experiencia",
+                        "Solicitud / recomendación RFP": "",
+                        "Respuesta incluida en oferta": second,
+                    })
+                if fifth:
+                    records.append({
+                        "Punto RFP": current_point,
+                        "Subcapítulo": "6.2 Etapas de desarrollo tecnológico ejecutadas",
+                        "Concepto": first_clean if re.match(r"^\d+$", first_clean) else "",
+                        "Solicitud / recomendación RFP": second if re.match(r"^\d+$", first_clean) else first_clean,
+                        "Respuesta incluida en oferta": fifth,
+                    })
+                if first_clean:
+                    last_concept = first_clean
                 continue
             if current_point in {"9", "11", "12"}:
                 concept = first_clean or last_concept or "Continuación"
@@ -5240,64 +5271,27 @@ if entel_proposal_6_view_df.empty:
         })
         .reset_index(drop=True)
     )
-entel_proposal_6_text_items = [
-    str(value).strip()
-    for value in entel_proposal_6_display_df["Concepto"].tolist()
-    if str(value).strip()
-]
-if entel_proposal_6_text_items:
-    entel_proposal_6_intro_items = []
-    entel_proposal_6_stage_items = []
-    entel_proposal_6_closing_items = []
-    in_stages = False
-    for item in entel_proposal_6_text_items:
-        item_lower = item.lower()
-        if item_lower.startswith("a partir de esta configuración"):
-            in_stages = True
-            continue
-        if item_lower.startswith("el primer piloto constituye") or item_lower.startswith("presentación en anexo"):
-            in_stages = False
-            entel_proposal_6_closing_items.append(item)
-            continue
-        if in_stages:
-            entel_proposal_6_stage_items.append(item)
-        elif len(entel_proposal_6_intro_items) < 2:
-            entel_proposal_6_intro_items.append(item)
-        else:
-            entel_proposal_6_closing_items.append(item)
-
-    def entel_experience_area(text: str) -> str:
-        normalized = text.lower()
-        if "cfd" in normalized or "aerodin" in normalized or "rotor" in normalized or "túnel" in normalized:
-            return "Aerodinámica y validación experimental"
-        if "mecánico" in normalized or "estructural" in normalized or "palas" in normalized or "brazos" in normalized or "eje" in normalized:
-            return "Diseño mecánico / estructural"
-        if "generador" in normalized or "eléctrica" in normalized or "inversor" in normalized or "mppt" in normalized:
-            return "Generación eléctrica y control"
-        if "frenado" in normalized or "sobrevelocidad" in normalized:
-            return "Seguridad operacional"
-        if "memorias" in normalized or "planos" in normalized or "documentación" in normalized:
-            return "Ingeniería documental"
-        if "instrumentación" in normalized or "monitoreo" in normalized:
-            return "Instrumentación y datos"
-        if "pruebas" in normalized or "ensayos" in normalized or "sincronización" in normalized:
-            return "Pruebas e integración"
-        if "piloto" in normalized or "validación" in normalized:
-            return "Piloto y validación operacional"
-        return "Desarrollo tecnológico"
-
-    entel_proposal_6_summary_df = pd.DataFrame([
-        {"Eje de experiencia": "Base tecnológica VAWT", "Evidencia declarada": entel_proposal_6_intro_items[0] if len(entel_proposal_6_intro_items) > 0 else ""},
-        {"Eje de experiencia": "Investigación y selección de configuración", "Evidencia declarada": entel_proposal_6_intro_items[1] if len(entel_proposal_6_intro_items) > 1 else ""},
-        {"Eje de experiencia": "Validación piloto e industrialización", "Evidencia declarada": entel_proposal_6_closing_items[0] if len(entel_proposal_6_closing_items) > 0 else ""},
-        {"Eje de experiencia": "Respaldo documental", "Evidencia declarada": entel_proposal_6_closing_items[-1] if len(entel_proposal_6_closing_items) > 1 else "Presentación en Anexo 6-Experiencia Fw axial Energy"},
-    ])
-    entel_proposal_6_stages_df = pd.DataFrame([
-        {"N°": idx, "Área técnica": entel_experience_area(item), "Etapa ejecutada": item}
-        for idx, item in enumerate(entel_proposal_6_stage_items, start=1)
-    ])
-else:
+entel_proposal_6_summary_df = (
+    entel_proposal_6_display_df[
+        entel_proposal_6_display_df["Subcapítulo"].eq("6.1 Síntesis de experiencia declarada")
+    ][["Concepto", "Respuesta incluida en oferta"]]
+    .rename(columns={"Concepto": "Eje de experiencia", "Respuesta incluida en oferta": "Evidencia declarada"})
+    .reset_index(drop=True)
+)
+entel_proposal_6_stages_df = (
+    entel_proposal_6_display_df[
+        entel_proposal_6_display_df["Subcapítulo"].eq("6.2 Etapas de desarrollo tecnológico ejecutadas")
+    ][["Concepto", "Solicitud / recomendación RFP", "Respuesta incluida en oferta"]]
+    .rename(columns={
+        "Concepto": "N°",
+        "Solicitud / recomendación RFP": "Área técnica",
+        "Respuesta incluida en oferta": "Etapa ejecutada",
+    })
+    .reset_index(drop=True)
+)
+if entel_proposal_6_summary_df.empty:
     entel_proposal_6_summary_df = entel_proposal_6_view_df.copy()
+if entel_proposal_6_stages_df.empty:
     entel_proposal_6_stages_df = pd.DataFrame()
 entel_proposal_7_concepts_view_df = entel_proposal_7_concepts_df[entel_proposal_concepts_cols].copy()
 entel_proposal_7_rfp_view_df = entel_proposal_7_rfp_df[entel_proposal_table_cols].copy()
