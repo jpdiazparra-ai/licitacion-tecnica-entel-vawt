@@ -6754,7 +6754,17 @@ if not entel_proposal_7_sla_df.empty:
 if not entel_proposal_7_other_df.empty:
     render_entel_fixed_table(entel_proposal_7_other_view_df, widths=[28, 37, 35])
 st.markdown('<div class="entel-eng-section" style="--accent:#d9a766;">8. Repuestos y Servicio Local</div>', unsafe_allow_html=True)
-render_entel_fixed_table(entel_proposal_8_view_df, widths=[28, 37, 35])
+for subchapter, subchapter_df in entel_proposal_8_display_df.groupby("Subcapítulo", sort=False, dropna=False):
+    subchapter_title = str(subchapter).strip() or "8. Repuestos y Servicio Local"
+    if subchapter_title != "8. Repuestos y Servicio Local":
+        st.markdown(
+            f'<div class="entel-eng-section" style="--accent:#d9a766;">{escape(subchapter_title)}</div>',
+            unsafe_allow_html=True,
+        )
+    render_entel_fixed_table(
+        subchapter_df[entel_proposal_table_cols].reset_index(drop=True),
+        widths=[28, 37, 35],
+    )
 if not entel_proposal_9_view_df.empty:
     st.markdown('<div class="entel-eng-section" style="--accent:#d9a766;">9. Importación y Logística</div>', unsafe_allow_html=True)
     render_entel_fixed_table(entel_proposal_9_view_df, widths=[100])
